@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>UAV Safety Check Prototype</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+      body, html { margin: 0; padding: 0; height: 100%; font-family: Arial, sans-serif; }
+      #map { height: 100%; width: 100%; }
+
+      /* Floating dashboard */
+      #dashboard {
+        position: absolute;
+        top: 0; left: 0;
+        height: 100%; width: 280px;
+        background: white;
+        box-shadow: 2px 0 6px rgba(0,0,0,0.2);
+        padding: 15px;
+        overflow-y: auto;
+        z-index: 10;
+      }
+
+      #dashboard h2 {
+        margin-top: 0;
+        font-size: 18px;
+        border-bottom: 1px solid #ccc;
+        padding-bottom: 8px;
+      }
+
+      #address {
+        width: 90%;
+        padding: 6px;
+        margin-top: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+
+      #info {
+        margin-top: 20px;
+        font-size: 14px;
+        line-height: 1.4;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Floating Dashboard -->
+    <div id="dashboard">
+      <h2>UAV Safety Prototype</h2>
+      <input id="address" type="text" placeholder="Enter address">
+      <button onclick="geocodeAddress()">Find</button>
+      <div id="info">
+        <b>Location Info:</b>
+        <p id="place">No place selected yet.</p>
+      </div>
+    </div>
+
+    <!-- Map -->
+    <div id="map"></div>
+
+    <script>
+      let map, geocoder, infoWindow;
+
+      function initMap() {
+        map = new google.maps.Map(document.getElementById("map"), {
+          center: { lat: 18.5204, lng: 73.8567 }, // Pune default
+          zoom: 12,
+        });
+
+        geocoder = new google.maps.Geocoder();
+        infoWindow = new google.maps.InfoWindow();
+
+        // Click on map to drop waypoint + reverse geocode
+        map.addListener("click", (event) => {
+          const latlng = event.latLng;
+
+          new google.maps.Marker({
+            position: latlng,
+            map: map,
+          });
+
+          geocoder.geocode({ location: latlng }, (results, status) => {
+            if (status === "OK" && results[0]) {
+              document.getElementById("place").innerText =
+                results[0].formatted_address + 
+                "\n(Lat: " + latlng.lat().toFixed(5) + ", Lng: " + latlng.lng().toFixed(5) + ")";
+            } else {
+              document.getElementById("place").innerText =
+                "No address found for clicked location.";
+            }
+          });
+        });
+      }
+
+      // Address → Lat/Lng + update dashboard
+      function geocodeAddress() {
+        const address = document.getElementById("address").value;
+        geocoder.geocode({ address: address }, (results, status) => {
+          if (status === "OK") {
+            map.setCenter(results[0].geometry.location);
+            new google.maps.Marker({
+              map: map,
+              position: results[0].geometry.location,
+            });
+
+            document.getElementById("place").innerText =
+              results[0].formatted_address +
+              "\n(Lat: " + results[0].geometry.location.lat().toFixed(5) +
+              ", Lng: " + results[0].geometry.location.lng().toFixed(5) + ")";
+          } else {
+            document.getElementById("place").innerText =
+              "Geocode failed: " + status;
+          }
+        });
+      }
+    </script>
+
+    <!-- Replace YOUR_API_KEY with your actual Google Maps API key -->
+    <script async
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCuNEM4vkbcyLrR_zHe40XxDYuMMDQmE90&callback=initMap">
+    </script>
+  </body>
+</html>
